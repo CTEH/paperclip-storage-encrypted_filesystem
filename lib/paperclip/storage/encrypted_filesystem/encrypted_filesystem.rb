@@ -45,7 +45,15 @@ module Paperclip
         @key_for_instance ||= Paperclip::Storage::EncryptedFilesystem.configuration.generate_key_proc.try(:call, instance) || Encryptoid.random_key
         processed_key = Paperclip::Storage::EncryptedFilesystem.configuration.process_key_proc.call(@key_for_instance, instance)
         instance.update_column(:paperclip_encryption_key, processed_key)
+        before_encrypt_proc = Paperclip::Storage::EncryptedFilesystem.configuration.before_encrypt_proc
+        if before_encrypt_proc
+          data = before_encrypt_proc.call(data, instance)
+        end
         Encryptoid.encrypt data, key: @key_for_instance, iv: iv
+      end
+
+      def decrypt(options={})
+        instance.decrypt(name, options)
       end
 
       def validate_instance_methods!
